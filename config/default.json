@@ -1,0 +1,6 @@
+{
+    "mongoURI":"mongodb+srv://user_01:felp1988@cluster0.gpera.gcp.mongodb.net/infnet?retryWrites=true&w=majority",
+    "jwtSecret": "<secret>",
+    "githubToken": "<yoursecrectaccesstoken>"
+    
+}
