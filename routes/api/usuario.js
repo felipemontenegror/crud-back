@@ -3,6 +3,7 @@ const User = require('../../models/usuario');  //const { Usuario, listaUsuarios 
 const { check, validationResult } = require('express-validator');
 const router = express.Router()
 const bcrypt = require('bcryptjs');
+const auth = require('../../middleaware/auth')
 
 
 //POST para criação, PUT/PATCH para atualização(PUT de tudo) e DELETE para a remoção**
@@ -10,10 +11,10 @@ const bcrypt = require('bcryptjs');
 // @route    GET /user/:userId
 // @desc     DETAIL user
 // @access   Public
-router.get('/:email', [], async(req, res, next)=> {   // 
+router.get('/:userId', [], async(req, res, next)=> {   //troquei o parametro de emai para id
     try{
-      let param_email = req.params["email"]
-      const user = await User.findOne({email : param_email}) //apenas uma consulta
+      const id = req.params.userId
+      const user = await User.findOne({_id : id}) //apenas consulta
       if(user){
         res.json(user)
       }else{
@@ -29,10 +30,11 @@ router.get('/:email', [], async(req, res, next)=> {   //
   // @route    DELETE /user/:userId
   // @desc     DELETE user
   // @access   Public
-  router.delete('/:email', async(req, res, next)=> {
+  router.delete('/:userId', async(req, res, next)=> {
     try{
-      let  param_email =  req.params["email"]
-      const user = await User.findOneAndDelete({ email: param_email})
+      const id = req.params.userId   //pega o parametro da rota userId
+      const user = await User.findOneAndDelete({_id : id}) //busca e deleta o usuario que é igual ao id que buscou na URL
+      await Profile.findOneAndDelete({user : id}) //busca e dele o user tb
       if (user){
         res.json(user)
       }else{
@@ -47,7 +49,7 @@ router.get('/:email', [], async(req, res, next)=> {   //
   // @route    PUT /user/:userId
   // @desc     EDIT user
   // @access   Public
-  router.put('/:email',[
+  router.put('/:userId',[
     check('email', 'email is not valid').isEmail(),
     check('nome').not().isEmpty(),
     check('senha', 'Please enter a password with 6 or more characters').isLength({min : 6}),
@@ -59,14 +61,14 @@ router.get('/:email', [], async(req, res, next)=> {   //
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() })
       }
-      let param_email = req.params["email"]
+      const id = req.params.userId
       let { nome, email, senha, time, jogador, is_active, is_admin } = req.body
       let update = { nome, email, senha, time, jogador, is_active, is_admin };
       
       const salt = await bcrypt.genSalt(10);
       update.senha = await bcrypt.hash(senha, salt);
       
-      let user = await User.findOneAndReplace({email : param_email}, update, {new: true})
+      let user = await User.findOneAndReplace({_id : id}, update, { new: true })
       if(user){
         res.json(user)
       }else{
@@ -113,18 +115,19 @@ router.get('/:email', [], async(req, res, next)=> {   //
     }
   })
   
-  // @route    GET /user
-  // @desc     LIST user
-  // @access   Public
-  router.get('/', async(req, res, next)=> {
-    try{
-      const user = await User.find({})
-      res.json(user)
-    }catch(err){
-      console.error(err.message)
-      res.status(500).send({"error" : "Server Error"})
-    }
-  })
+// @route    GET /user
+// @desc     LIST user
+// @access   Private
+router.get('/',auth, async (req, res, next) => {
+  try {
+    const user = await User.find({})
+    res.json(user)
+  } catch (err) {
+    console.error(err.message)
+    res.status(500).send({ "error": "Server Error" })
+  }
+})
+
   
   // @route    POST /user
   // @desc     CREATE user
@@ -150,7 +153,6 @@ router.get('/:email', [], async(req, res, next)=> {   //
         
   
         await usuario.save()
-
         if (usuario.id){
           res.json(usuario);
         }

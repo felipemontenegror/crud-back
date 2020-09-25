@@ -1,5 +1,5 @@
-const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');  // o models q estrutura o DB
+const mongoose = require('mongoose'); // a profile e usuario estao referenciadas, uma com a outra
 
 const UserSchema = new mongoose.Schema({
     nome : {
